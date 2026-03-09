@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Admin Dashboard</h2>
+    <span class="text-muted small">Management Overview</span>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="row g-3">
+
+    <div class="col-md-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-people me-2"></i>Total Tenants
+          </h5>
+          <p class="card-text display-4 mb-0">{{ kpi_total_tenants }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-building me-2"></i>Occupancy Rate
+          </h5>
+          <p class="card-text display-4 mb-0">{{ kpi_occupancy_rate }}%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-cash-stack me-2"></i>Pending Rent
+          </h5>
+          <p class="card-text display-4 mb-0">${{ kpi_pending_rent_total }}</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Chart -->
+  <div class="row mt-5">
+    <div class="col-lg-8 mx-auto">
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-pie-chart me-2"></i>Late Payments by Property
+        </div>
+        <div class="card-body">
+          <div style="height:320px;">
+            <canvas id="latePaymentsPie"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+
+{{ late_by_property_labels|json_script:"pieLabels" }}
+{{ late_by_property_counts|json_script:"pieData" }}
+
+<script>
+
+const labelsEl = document.getElementById("pieLabels");
+const dataEl = document.getElementById("pieData");
+
+const pieLabels = labelsEl ? JSON.parse(labelsEl.textContent) : ["Building A","Building B"];
+const pieData = dataEl ? JSON.parse(dataEl.textContent) : [5,3];
+
+const pieCanvas = document.getElementById("latePaymentsPie");
+
+if (pieCanvas && window.Chart) {
+
+  const ctx = pieCanvas.getContext("2d");
+
+  new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieData,
+        backgroundColor: [
+          "#dc3545",
+          "#ffc107",
+          "#198754",
+          "#0d6efd",
+          "#6f42c1"
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+
+}
+
+</script>
+
+{% endblock %}

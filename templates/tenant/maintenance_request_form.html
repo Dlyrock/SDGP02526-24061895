@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Request{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <h2 class="mb-4">Maintenance Request</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_issue_type" class="form-label">Issue Type</label>
+            {{ form.issue_type }}
+        </div>
+        <div class="mb-3">
+            <label for="id_priority" class="form-label">Priority</label>
+            {{ form.priority }}
+        </div>
+        <div class="mb-3">
+            <label for="id_description" class="form-label">Description</label>
+            {{ form.description }}
+        </div>
+        <div class="mb-3">
+            <label for="id_preferred_time_window" class="form-label">Preferred Time Window</label>
+            {{ form.preferred_time_window }}
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+{% endblock %}

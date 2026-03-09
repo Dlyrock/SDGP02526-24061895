@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Make a Payment (Simulation){% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <h2 class="mb-4">Make a Payment (Simulation)</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_invoice" class="form-label">Invoice</label>
+            {{ form.invoice }}
+            {% if form.invoice.errors %}
+                <div class="text-danger">{{ form.invoice.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="id_cardholder_name" class="form-label">Cardholder Name</label>
+            {{ form.cardholder_name }}
+            {% if form.cardholder_name.errors %}
+                <div class="text-danger">{{ form.cardholder_name.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="id_card_number" class="form-label">Card Number</label>
+            {{ form.card_number }}
+            <div class="form-text">Test: 4242 4242 4242 4242</div>
+            {% if form.card_number.errors %}
+                <div class="text-danger">{{ form.card_number.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="id_expiry" class="form-label">Expiry</label>
+            {{ form.expiry }}
+            {% if form.expiry.errors %}
+                <div class="text-danger">{{ form.expiry.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="id_cvv" class="form-label">CVV</label>
+            {{ form.cvv }}
+            {% if form.cvv.errors %}
+                <div class="text-danger">{{ form.cvv.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="id_amount" class="form-label">Amount</label>
+            {{ form.amount }}
+            {% if form.amount.errors %}
+                <div class="text-danger">{{ form.amount.errors }}</div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Pay</button>
+    </form>
+</div>
+{% endblock %}
