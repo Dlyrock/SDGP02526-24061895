@@ -3,106 +3,28 @@
 {% block title %}Maintenance Request{% endblock %}
 
 {% block content %}
-<div class="container py-3">
+<div class="container mt-5" style="max-width: 600px;">
+    <h2 class="mb-4">Submit Maintenance Request</h2>
 
-  <div class="row justify-content-center">
-    <div class="col-lg-7 col-xl-6">
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
 
-      <div class="card border-0 shadow-sm">
+    <form method="post">
+        {% csrf_token %}
 
-        <div class="card-header py-3">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-tools me-2"></i>
-            <span>Maintenance Request</span>
-          </div>
+        <div class="mb-3">
+            <label for="id_description" class="form-label">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div class="text-danger">{{ form.description.errors }}</div>
+            {% endif %}
         </div>
 
-        <div class="card-body p-4">
-
-          <div class="mb-4">
-            <h2 class="fw-bold mb-1">Submit Maintenance Request</h2>
-            <p class="text-muted mb-0">
-              Report a maintenance issue in your apartment and the staff will review it.
-            </p>
-          </div>
-
-          <form method="post" novalidate>
-            {% csrf_token %}
-
-            <div class="mb-3">
-              <label for="id_issue_type" class="form-label fw-semibold">
-                Issue Type
-              </label>
-              {{ form.issue_type }}
-              {% if form.issue_type.errors %}
-                <div class="text-danger small mt-1">
-                  {{ form.issue_type.errors }}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label for="id_priority" class="form-label fw-semibold">
-                Priority
-              </label>
-              {{ form.priority }}
-              {% if form.priority.errors %}
-                <div class="text-danger small mt-1">
-                  {{ form.priority.errors }}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label for="id_description" class="form-label fw-semibold">
-                Description
-              </label>
-              {{ form.description }}
-              <div class="form-text">
-                Provide as much detail as possible about the issue.
-              </div>
-              {% if form.description.errors %}
-                <div class="text-danger small mt-1">
-                  {{ form.description.errors }}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="mb-4">
-              <label for="id_preferred_time_window" class="form-label fw-semibold">
-                Preferred Time Window
-              </label>
-              {{ form.preferred_time_window }}
-              <div class="form-text">
-                Select when maintenance staff can visit your apartment.
-              </div>
-              {% if form.preferred_time_window.errors %}
-                <div class="text-danger small mt-1">
-                  {{ form.preferred_time_window.errors }}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-send me-1"></i>
-                Submit Request
-              </button>
-
-              <a href="{% url 'tenant_dashboard' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>
-                Back to Dashboard
-              </a>
-            </div>
-
-          </form>
-
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
+        <button type="submit" class="btn btn-primary">Submit Request</button>
+        <a href="{% url 'tenant_dashboard' %}" class="btn btn-secondary ms-2">Back</a>
+    </form>
 </div>
 {% endblock %}

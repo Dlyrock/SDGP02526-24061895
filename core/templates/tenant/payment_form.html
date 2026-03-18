@@ -5,88 +5,80 @@
 {% block content %}
 <div class="container mt-5" style="max-width:600px;">
 
-<div class="card shadow-sm">
-<div class="card-body">
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-<h3 class="mb-4">Make a Payment</h3>
+            <h3 class="mb-4">Make a Payment</h3>
 
-<form method="post">
-{% csrf_token %}
+            <form method="post">
+                {% csrf_token %}
 
-<div class="mb-3">
-<label class="form-label">Amount</label>
-<input type="number" name="amount" class="form-control" placeholder="Enter amount" required>
-</div>
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
 
-<div class="mb-3">
-<label class="form-label">Payment Method</label>
-<select name="payment_method" class="form-select" id="paymentMethod">
-<option value="card">Card</option>
-<option value="bank">Bank Transfer</option>
-<option value="cash">Cash</option>
-</select>
-</div>
+                <div class="mb-3">
+                    <label class="form-label">Amount</label>
+                    {{ form.amount }}
+                    {% if form.amount.errors %}
+                        <div class="text-danger">{{ form.amount.errors }}</div>
+                    {% endif %}
+                </div>
 
-<!-- CARD DETAILS -->
+                <div class="mb-3">
+                    <label class="form-label">Payment Method</label>
+                    {{ form.payment_method }}
+                    {% if form.payment_method.errors %}
+                        <div class="text-danger">{{ form.payment_method.errors }}</div>
+                    {% endif %}
+                </div>
 
-<div id="cardDetails">
+                <div id="cardDetails">
+                    <div class="mb-3">
+                        <label class="form-label">Card Number</label>
+                        <input type="text" name="card_number" class="form-control" placeholder="1234 5678 9012 3456">
+                    </div>
 
-<div class="mb-3">
-<label class="form-label">Card Number</label>
-<input type="text" name="card_number" class="form-control" placeholder="1234 5678 9012 3456">
-</div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="text" name="expiry_date" class="form-control" placeholder="MM/YY">
+                        </div>
 
-<div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CVV</label>
+                            <input type="password" name="cvv" class="form-control" placeholder="123">
+                        </div>
+                    </div>
+                </div>
 
-<div class="col-md-6 mb-3">
-<label class="form-label">Expiry Date</label>
-<input type="text" name="expiry_date" class="form-control" placeholder="MM/YY">
-</div>
+                <button type="submit" class="btn btn-primary">Submit Payment</button>
+                <a href="{% url 'tenant_dashboard' %}" class="btn btn-secondary ms-2">Cancel</a>
+            </form>
 
-<div class="col-md-6 mb-3">
-<label class="form-label">CVV</label>
-<input type="password" name="cvv" class="form-control" placeholder="123">
-</div>
-
-</div>
-
-</div>
-
-<div class="mb-3">
-<label class="form-label">Reference</label>
-<input type="text" name="reference" class="form-control" placeholder="Optional reference">
-</div>
-
-<button type="submit" class="btn btn-primary">
-Submit Payment
-</button>
-
-<a href="{% url 'tenant_dashboard' %}" class="btn btn-secondary ms-2">
-Cancel
-</a>
-
-</form>
-
-</div>
-</div>
+        </div>
+    </div>
 
 </div>
 
 <script>
-
-const paymentMethod = document.getElementById("paymentMethod");
+const paymentMethod = document.getElementById("id_payment_method");
 const cardDetails = document.getElementById("cardDetails");
 
-paymentMethod.addEventListener("change", function() {
-
-if(paymentMethod.value === "card"){
-cardDetails.style.display = "block";
-}else{
-cardDetails.style.display = "none";
+function toggleCardDetails() {
+    if (!paymentMethod || !cardDetails) return;
+    if (paymentMethod.value === "credit_card") {
+        cardDetails.style.display = "block";
+    } else {
+        cardDetails.style.display = "none";
+    }
 }
 
-});
-
+if (paymentMethod) {
+    paymentMethod.addEventListener("change", toggleCardDetails);
+    toggleCardDetails();
+}
 </script>
-
 {% endblock %}

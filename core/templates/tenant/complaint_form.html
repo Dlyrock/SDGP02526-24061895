@@ -5,29 +5,26 @@
 {% block content %}
 <div class="container mt-5" style="max-width: 600px;">
     <h2 class="mb-4">Submit a Complaint</h2>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
-        <div class="mb-3">
-            <label for="id_category" class="form-label">Category</label>
-            {{ form.category }}
-            {% if form.category.help_text %}
-                <div class="form-text">{{ form.category.help_text }}</div>
-            {% endif %}
-            {% if form.category.errors %}
-                <div class="text-danger">{{ form.category.errors }}</div>
-            {% endif %}
-        </div>
+
         <div class="mb-3">
             <label for="id_description" class="form-label">Description</label>
             {{ form.description }}
-            {% if form.description.help_text %}
-                <div class="form-text">{{ form.description.help_text }}</div>
-            {% endif %}
             {% if form.description.errors %}
                 <div class="text-danger">{{ form.description.errors }}</div>
             {% endif %}
         </div>
+
         <button type="submit" class="btn btn-primary">Send</button>
+        <a href="{% url 'tenant_dashboard' %}" class="btn btn-secondary ms-2">Back</a>
     </form>
 </div>
 {% endblock %}
