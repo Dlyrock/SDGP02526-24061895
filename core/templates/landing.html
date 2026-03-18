@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome | Paragon PAMS{% endblock %}
+
+{% block content %}
+<div class="hero-panel p-4 p-md-5 mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <span class="soft-badge">
+                <i class="bi bi-stars"></i>
+                Smart Apartment Management
+            </span>
+
+            <h1 class="display-5 fw-bold mt-3 mb-3">Paragon Apartment Management System</h1>
+
+            <p class="lead mb-4">
+                A streamlined platform for managing tenants, payments, maintenance requests,
+                complaints, and apartment performance analytics.
+            </p>
+
+            <div class="d-flex flex-wrap gap-2">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'tenant_dashboard' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+                    </a>
+                {% else %}
+                    <a href="{% url 'tenant_login' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Tenant Login
+                    </a>
+
+                    <a href="{% url 'admin_login' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-shield-lock me-2"></i>Staff Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4 text-dark">System Highlights</h5>
+
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="kpi-icon-box primary me-3">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold text-dark">Role-Based Access</div>
+                            <div class="text-muted small">Separate interfaces for tenants and staff.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="kpi-icon-box danger me-3">
+                            <i class="bi bi-exclamation-octagon"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold text-dark">Late Payment Alerts</div>
+                            <div class="text-muted small">Overdue rent notifications and reminders.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="kpi-icon-box warning me-3">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold text-dark">Maintenance Tracking</div>
+                            <div class="text-muted small">Live request updates with progress visibility.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start">
+                        <div class="kpi-icon-box success me-3">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold text-dark">Analytics Dashboard</div>
+                            <div class="text-muted small">Payment and property insights powered by Chart.js.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="bi bi-credit-card me-2 text-primary"></i>Payments
+                </h5>
+                <p class="text-muted mb-0">
+                    Review payment history, simulate rent submissions, and monitor overdue balances.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="bi bi-wrench-adjustable-circle me-2 text-warning"></i>Maintenance
+                </h5>
+                <p class="text-muted mb-0">
+                    Submit maintenance requests, track current progress, and review expected completion dates.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="bi bi-bar-chart-line me-2 text-success"></i>Analytics
+                </h5>
+                <p class="text-muted mb-0">
+                    Visualise tenant payment behaviour, neighbour comparisons, and property-level late payment patterns.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

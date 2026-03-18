@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold mb-0">Dashboard</h1>
+        <button class="btn btn-sm btn-primary" id="toggleAllBtn">
+            Open / Close All
+        </button>
+    </div>
+
+    <!-- Alerts -->
+    <div class="mb-4">
+        {% if late_payments_json %}
+            <div class="alert alert-danger">
+                <strong>Late Payment Alert:</strong>
+                Some apartments have late payments. Check the chart below.
+            </div>
+        {% endif %}
+
+        {% if maintenance_summary.pending or maintenance_summary.in_progress %}
+            <div class="alert alert-warning">
+                <strong>Maintenance Alert:</strong>
+                There are pending or in-progress maintenance requests.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Tenants Accordion -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">Tenants</h4>
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="tenantsAccordion">
+                {% for tenant in tenants %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ tenant.id }}">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapse{{ tenant.id }}"
+                                    aria-expanded="false"
+                                    aria-controls="collapse{{ tenant.id }}">
+                                {{ tenant.first_name }} {{ tenant.last_name }} ({{ tenant.email }})
+                            </button>
+                        </h2>
+
+                        <div id="collapse{{ tenant.id }}"
+                             class="accordion-collapse collapse"
+                             aria-labelledby="heading{{ tenant.id }}"
+                             data-bs-parent="#tenantsAccordion">
+                            <div class="accordion-body">
+
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                Payment History
+                                            </div>
+                                            <div class="card-body">
+                                                <div style="height: 260px;">
+                                                    <canvas id="paymentChart{{ tenant.id }}"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                Tenant vs Neighbors
+                                            </div>
+                                            <div class="card-body">
+                                                <div style="height: 260px;">
+                                                    <canvas id="neighborChart{{ tenant.id }}"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted mb-0">No tenants found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Apartments -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    Available Apartments
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for apt in available_apartments %}
+                        <li class="list-group-item">
+                            {{ apt.address }}, {{ apt.city.name }} - {{ apt.bedrooms }} beds
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No available apartments.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    Occupied Apartments
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for apt in occupied_apartments %}
+                        <li class="list-group-item">
+                            {{ apt.address }}, {{ apt.city.name }} - {{ apt.bedrooms }} beds
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No occupied apartments.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Maintenance & Complaints -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    Recent Maintenance Requests
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for req in recent_requests %}
+                        <li class="list-group-item">
+                            {{ req.tenant.first_name }} {{ req.tenant.last_name }}:
+                            {{ req.description }} ({{ req.status }})
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No maintenance requests.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    Recent Complaints
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for comp in recent_complaints %}
+                        <li class="list-group-item">
+                            {{ comp.tenant.first_name }} {{ comp.tenant.last_name }}:
+                            {{ comp.description }} ({{ comp.status }})
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No complaints.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Late Payments Pie Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Late Payments per Apartment
+        </div>
+        <div class="card-body">
+            <div style="height: 320px;">
+                <canvas id="latePaymentsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Maintenance Summary
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">Pending: {{ maintenance_summary.pending }}</li>
+            <li class="list-group-item">In Progress: {{ maintenance_summary.in_progress }}</li>
+            <li class="list-group-item">Completed: {{ maintenance_summary.completed }}</li>
+        </ul>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+{{ tenant_payments_json|json_script:"tenant-payments-data" }}
+{{ tenant_vs_neighbors_json|json_script:"tenant-neighbors-data" }}
+{{ late_payments_json|json_script:"late-payments-data" }}
+
+<script>
+    // Accordion Open/Close All
+    const toggleBtn = document.getElementById("toggleAllBtn");
+    let allOpen = false;
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+            document.querySelectorAll("#tenantsAccordion .accordion-collapse").forEach((el) => {
+                const bsCollapse = new bootstrap.Collapse(el, { toggle: false });
+                if (allOpen) {
+                    bsCollapse.hide();
+                } else {
+                    bsCollapse.show();
+                }
+            });
+            allOpen = !allOpen;
+        });
+    }
+
+    // Tenant Payments Charts
+    const tenantPaymentsEl = document.getElementById("tenant-payments-data");
+    const tenantPayments = tenantPaymentsEl ? JSON.parse(tenantPaymentsEl.textContent) : [];
+
+    tenantPayments.forEach((item) => {
+        const canvas = document.getElementById(`paymentChart${item.tenant_id}`);
+        if (!canvas) return;
+
+        new Chart(canvas.getContext("2d"), {
+            type: "line",
+            data: {
+                labels: item.dates,
+                datasets: [{
+                    label: "Payments",
+                    data: item.amounts,
+                    borderColor: "#2563eb",
+                    backgroundColor: "rgba(37, 99, 235, 0.10)",
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Tenant vs Neighbors Charts
+    const tenantNeighborsEl = document.getElementById("tenant-neighbors-data");
+    const tenantNeighbors = tenantNeighborsEl ? JSON.parse(tenantNeighborsEl.textContent) : [];
+
+    tenantNeighbors.forEach((item) => {
+        const matchingTenant = tenantPayments.find((t) => t.tenant_name === item.tenant_name);
+        if (!matchingTenant) return;
+
+        const canvas = document.getElementById(`neighborChart${matchingTenant.tenant_id}`);
+        if (!canvas) return;
+
+        const labels = [item.tenant_name, ...item.neighbors.map((n) => n.name)];
+        const paymentsData = [
+            matchingTenant.amounts.reduce((a, b) => a + b, 0),
+            ...item.neighbors.map((n) => n.payments.reduce((a, b) => a + b, 0))
+        ];
+
+        new Chart(canvas.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Total Payments",
+                    data: paymentsData,
+                    backgroundColor: [
+                        "#2563eb",
+                        "#f59e0b",
+                        "#10b981",
+                        "#94a3b8",
+                        "#ef4444"
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Late Payments Pie Chart
+    const latePaymentsEl = document.getElementById("late-payments-data");
+    const latePayments = latePaymentsEl ? JSON.parse(latePaymentsEl.textContent) : {};
+
+    const lateCanvas = document.getElementById("latePaymentsChart");
+    if (lateCanvas) {
+        new Chart(lateCanvas.getContext("2d"), {
+            type: "pie",
+            data: {
+                labels: Object.keys(latePayments),
+                datasets: [{
+                    data: Object.values(latePayments),
+                    backgroundColor: [
+                        "#ef4444",
+                        "#f59e0b",
+                        "#10b981",
+                        "#2563eb",
+                        "#8b5cf6",
+                        "#ec4899"
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+</script>
+
+{% endblock %}

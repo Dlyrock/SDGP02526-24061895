@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import City, Apartment, Tenant, Lease, Payment, MaintenanceRequest, Complaint
+from .models import User, City, Apartment, Tenant, Lease, Payment, MaintenanceRequest, Complaint
 
+admin.site.register(User)
 admin.site.register(City)
 admin.site.register(Apartment)
 admin.site.register(Tenant)
