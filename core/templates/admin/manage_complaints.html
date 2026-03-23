@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Manage Complaints</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tenant</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for comp in complaints %}
+        <tr>
+            <td>{{ comp.tenant.first_name }} {{ comp.tenant.last_name }}</td>
+            <td>{{ comp.description }}</td>
+            <td>{{ comp.status }}</td>
+            <td>
+                {% if comp.status != "resolved" %}
+                <a href="{% url 'resolve_complaint' comp.id %}" class="btn btn-sm btn-success">
+                    Resolve
+                </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

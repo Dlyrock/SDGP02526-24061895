@@ -16,15 +16,15 @@ urlpatterns = [
     path('login/admin/', views.admin_login, name='admin_login'),
 
     # LOGOUT
-    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='landing'), name='logout'),
 
     # DASHBOARD
     path('dashboard/', views.dashboard_redirect, name='dashboard_redirect'),
     path('dashboard/tenant/', views.tenant_dashboard, name='tenant_dashboard'),
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
 
-    # TENANT FORMS
-    path('dashboard/tenant/payment/', views.payment_form, name='payment_form'),
-    path('dashboard/tenant/maintenance/', views.maintenance_request, name='maintenance_request'),
-    path('dashboard/tenant/complaint/', views.complaint_form, name='complaint_form'),
+    # TENANT ACTIONS (CLEAN URLS)
+    path('payment/', views.payment_form, name='payment_form'),
+    path('maintenance/', views.maintenance_request, name='maintenance_request'),
+    path('complaint/', views.complaint_form, name='complaint_form'),
 ]

@@ -10,53 +10,34 @@
       <h1 class="fw-bold mb-1">Tenant Dashboard</h1>
       <p class="text-muted mb-0">Welcome back, {{ user.get_full_name|default:user.username }}</p>
     </div>
-    <span class="badge text-bg-dark px-3 py-2">Apartment {{ tenant.apartment_code|default:"N/A" }}</span>
+    <span class="badge text-bg-dark px-3 py-2">
+      Apartment {{ tenant.apartment_code|default:"N/A" }}
+    </span>
   </div>
 
   {% if late_invoices and late_invoices|length > 0 %}
-    <div class="alert alert-danger" role="alert">
+    <div class="alert alert-danger">
       <strong>Late Payment Alert:</strong>
       You have {{ late_invoices|length }} overdue payment{% if late_invoices|length > 1 %}s{% endif %}.
     </div>
   {% endif %}
 
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <label for="date_from" class="form-label">From Date</label>
-          <input type="date" id="date_from" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
-        </div>
-        <div class="col-md-4">
-          <label for="date_to" class="form-label">To Date</label>
-          <input type="date" id="date_to" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
-        </div>
-        <div class="col-md-2 d-grid">
-          <button type="submit" class="btn btn-outline-primary">
-            <i class="bi bi-funnel me-1"></i>Filter
-          </button>
-        </div>
-        <div class="col-md-2 d-grid">
-          <a href="{% url 'tenant_dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-clockwise me-1"></i>Reset
-          </a>
-        </div>
-      </form>
-    </div>
-  </div>
-
+  <!-- ACTION BUTTONS -->
   <div class="d-flex flex-wrap gap-2 mb-4">
     <a href="{% url 'payment_form' %}" class="btn btn-primary">
       <i class="bi bi-credit-card me-1"></i>Make Payment
     </a>
-    <a href="{% url 'maintenance_request' %}" class="btn btn-secondary">
+
+    <a href="{% url 'maintenance_request' %}" class="btn btn-warning text-dark">
       <i class="bi bi-tools me-1"></i>Maintenance Request
     </a>
-    <a href="{% url 'complaint_form' %}" class="btn btn-warning text-dark">
-      <i class="bi bi-chat-left-text me-1"></i>Complaint
+
+    <a href="{% url 'complaint_form' %}" class="btn btn-danger">
+      <i class="bi bi-exclamation-circle me-1"></i>Complaint
     </a>
   </div>
 
+  <!-- KPI CARDS -->
   <div class="row g-4 mb-4">
     <div class="col-md-4">
       <div class="card h-100">
@@ -88,7 +69,7 @@
           <div class="kpi-icon-box success mx-auto mb-3">
             <i class="bi bi-building"></i>
           </div>
-          <h5 class="fw-bold">Apartment Details</h5>
+          <h5 class="fw-bold">Apartment</h5>
           <p class="mb-1 fw-semibold">{{ tenant.apartment_code|default:"N/A" }}</p>
           <p class="text-muted mb-0">{{ tenant.city|default:"N/A" }}</p>
         </div>
@@ -96,14 +77,13 @@
     </div>
   </div>
 
+  <!-- CHARTS -->
   <div class="row g-4 mb-4">
     <div class="col-lg-6">
       <div class="card h-100">
-        <div class="card-header">
-          <i class="bi bi-graph-up-arrow me-2"></i>Payment History
-        </div>
+        <div class="card-header">Payment History</div>
         <div class="card-body">
-          <div style="height: 320px;">
+          <div style="height: 300px;">
             <canvas id="paymentHistoryChart"></canvas>
           </div>
         </div>
@@ -112,11 +92,9 @@
 
     <div class="col-lg-6">
       <div class="card h-100">
-        <div class="card-header">
-          <i class="bi bi-bar-chart-line me-2"></i>Tenant vs Neighbors
-        </div>
+        <div class="card-header">Tenant vs Neighbors</div>
         <div class="card-body">
-          <div style="height: 320px;">
+          <div style="height: 300px;">
             <canvas id="neighborsBarChart"></canvas>
           </div>
         </div>
@@ -124,52 +102,40 @@
     </div>
   </div>
 
+  <!-- MAINTENANCE TABLE -->
   <div class="card">
-    <div class="card-header">
-      <i class="bi bi-list-task me-2"></i>Maintenance Progress
-    </div>
+    <div class="card-header">Maintenance Requests</div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Title</th>
+            <th>Description</th>
             <th>Status</th>
-            <th>Updated</th>
-            <th>ETA</th>
+            <th>Date</th>
           </tr>
         </thead>
         <tbody>
           {% for item in maintenance_items %}
             <tr>
-              <td>{{ item.title }}</td>
+              <td>{{ item.description }}</td>
               <td>
-                {% if item.status == 'OPEN' %}
-                  <span class="badge bg-danger">Open</span>
-                {% elif item.status == 'IN_PROGRESS' %}
+                {% if item.status == 'pending' %}
+                  <span class="badge bg-danger">Pending</span>
+                {% elif item.status == 'in_progress' %}
                   <span class="badge bg-warning text-dark">In Progress</span>
-                {% elif item.status == 'RESOLVED' %}
-                  <span class="badge bg-success">Resolved</span>
+                {% elif item.status == 'completed' %}
+                  <span class="badge bg-success">Completed</span>
                 {% else %}
                   <span class="badge bg-secondary">{{ item.status }}</span>
                 {% endif %}
               </td>
-              <td>{{ item.updated_at }}</td>
-              <td>{{ item.eta_date }}</td>
+              <td>{{ item.date_requested }}</td>
             </tr>
-
-            {% if item.status == 'IN_PROGRESS' %}
-              <tr>
-                <td colspan="4">
-                  <div class="alert alert-info mb-0 rounded-0 border-0">
-                    <strong>Progress Update:</strong>
-                    Estimated completion for "{{ item.title }}" is {{ item.eta_date }}.
-                  </div>
-                </td>
-              </tr>
-            {% endif %}
           {% empty %}
             <tr>
-              <td colspan="4" class="text-center text-muted p-4">No maintenance requests found.</td>
+              <td colspan="3" class="text-center text-muted p-4">
+                No maintenance requests yet.
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -187,55 +153,31 @@
 {{ neighbors_amounts|json_script:"nbAmounts" }}
 
 <script>
-  const payLabelsEl = document.getElementById("payLabels");
-  const payAmountsEl = document.getElementById("payAmounts");
-  const nbLabelsEl = document.getElementById("nbLabels");
-  const nbAmountsEl = document.getElementById("nbAmounts");
+const paymentLabels = JSON.parse(document.getElementById("payLabels").textContent);
+const paymentAmounts = JSON.parse(document.getElementById("payAmounts").textContent);
+const neighborsLabels = JSON.parse(document.getElementById("nbLabels").textContent);
+const neighborsAmounts = JSON.parse(document.getElementById("nbAmounts").textContent);
 
-  const paymentLabels = payLabelsEl ? JSON.parse(payLabelsEl.textContent) : ["Jan", "Feb", "Mar"];
-  const paymentAmounts = payAmountsEl ? JSON.parse(payAmountsEl.textContent) : [0, 0, 0];
-  const neighborsLabels = nbLabelsEl ? JSON.parse(nbLabelsEl.textContent) : ["You", "Neighbor"];
-  const neighborsAmounts = nbAmountsEl ? JSON.parse(nbAmountsEl.textContent) : [0, 0];
-
-  const paymentCanvas = document.getElementById("paymentHistoryChart");
-  if (paymentCanvas && window.Chart) {
-    new Chart(paymentCanvas.getContext("2d"), {
-      type: "line",
-      data: {
-        labels: paymentLabels,
-        datasets: [{
-          label: "Payments",
-          data: paymentAmounts,
-          borderColor: "#2563eb",
-          backgroundColor: "rgba(37, 99, 235, 0.12)",
-          fill: true,
-          tension: 0.35
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    });
+new Chart(document.getElementById("paymentHistoryChart"), {
+  type: "line",
+  data: {
+    labels: paymentLabels,
+    datasets: [{
+      label: "Payments",
+      data: paymentAmounts
+    }]
   }
+});
 
-  const neighborCanvas = document.getElementById("neighborsBarChart");
-  if (neighborCanvas && window.Chart) {
-    new Chart(neighborCanvas.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: neighborsLabels,
-        datasets: [{
-          label: "Amount",
-          data: neighborsAmounts,
-          backgroundColor: ["#2563eb", "#94a3b8"]
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    });
+new Chart(document.getElementById("neighborsBarChart"), {
+  type: "bar",
+  data: {
+    labels: neighborsLabels,
+    datasets: [{
+      label: "Amount",
+      data: neighborsAmounts
+    }]
   }
+});
 </script>
 {% endblock %}

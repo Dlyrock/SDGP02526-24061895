@@ -25,13 +25,19 @@ from .models import (
 )
 
 
+# -------------------
+# LANDING
+# -------------------
 def landing(request):
     return render(request, 'landing.html')
 
 
+# -------------------
+# REGISTER
+# -------------------
 def register(request):
     if request.user.is_authenticated:
-        if getattr(request.user, 'role', None) == 'TENANT':
+        if request.user.role == 'TENANT':
             return redirect('tenant_dashboard')
         return redirect('admin_dashboard')
 
@@ -48,9 +54,12 @@ def register(request):
     return render(request, 'tenant/register.html', {'form': form})
 
 
+# -------------------
+# TENANT LOGIN
+# -------------------
 def tenant_login(request):
     if request.user.is_authenticated:
-        if getattr(request.user, 'role', None) == 'TENANT':
+        if request.user.role == 'TENANT':
             return redirect('tenant_dashboard')
         return redirect('admin_dashboard')
 
@@ -60,7 +69,7 @@ def tenant_login(request):
         if form.is_valid():
             user = form.get_user()
 
-            if getattr(user, 'role', None) == 'TENANT':
+            if user.role == 'TENANT':
                 login(request, user)
                 return redirect('tenant_dashboard')
             else:
@@ -71,9 +80,12 @@ def tenant_login(request):
     return render(request, 'registration/login.html', {'form': form})
 
 
+# -------------------
+# ADMIN LOGIN
+# -------------------
 def admin_login(request):
     if request.user.is_authenticated:
-        if getattr(request.user, 'role', None) == 'TENANT':
+        if request.user.role == 'TENANT':
             return redirect('tenant_dashboard')
         return redirect('admin_dashboard')
 
@@ -83,7 +95,7 @@ def admin_login(request):
         if form.is_valid():
             user = form.get_user()
 
-            if getattr(user, 'role', None) in ['ADMIN', 'MANAGER', 'FRONTDESK', 'FINANCE', 'MAINTENANCE']:
+            if user.role in ['ADMIN', 'MANAGER', 'FRONTDESK', 'FINANCE', 'MAINTENANCE']:
                 login(request, user)
                 return redirect('admin_dashboard')
             else:
@@ -94,6 +106,9 @@ def admin_login(request):
     return render(request, 'registration/login.html', {'form': form})
 
 
+# -------------------
+# DASHBOARD REDIRECT
+# -------------------
 @login_required
 def dashboard_redirect(request):
     if request.user.role == 'TENANT':
@@ -101,12 +116,19 @@ def dashboard_redirect(request):
     return redirect('admin_dashboard')
 
 
+# -------------------
+# TENANT DASHBOARD
+# -------------------
 @login_required
 def tenant_dashboard(request):
+
+    if request.user.role != 'TENANT':
+        return redirect('admin_dashboard')
+
     tenant = Tenant.objects.filter(user=request.user).first()
 
     if not tenant:
-        messages.warning(request, "No tenant profile is linked to this account yet.")
+        messages.warning(request, "No tenant profile is linked.")
         return render(request, 'tenant/dashboard.html')
 
     lease = Lease.objects.filter(tenant=tenant).first()
@@ -155,8 +177,15 @@ def tenant_dashboard(request):
     return render(request, "tenant/dashboard.html", context)
 
 
+# -------------------
+# ADMIN DASHBOARD
+# -------------------
 @login_required
 def admin_dashboard(request):
+
+    if request.user.role == 'TENANT':
+        return redirect('tenant_dashboard')
+
     tenants = Tenant.objects.all()
     apartments = Apartment.objects.all()
 
@@ -210,22 +239,27 @@ def admin_dashboard(request):
     return render(request, 'admin/dashboard.html', context)
 
 
+# -------------------
+# PAYMENT
+# -------------------
 @login_required
 def payment_form(request):
+
+    if request.user.role != 'TENANT':
+        return redirect('admin_dashboard')
+
     tenant = Tenant.objects.filter(user=request.user).first()
 
     if not tenant:
-        messages.error(request, "No tenant profile is linked to this account.")
+        messages.error(request, "No tenant profile.")
         return redirect('tenant_dashboard')
 
     lease = Lease.objects.filter(tenant=tenant).first()
 
-    # Eğer lease yoksa demo amaçlı otomatik oluştur
     if not lease:
-        apartment = Apartment.objects.filter(available=True).first() or Apartment.objects.first()
-
+        apartment = Apartment.objects.first()
         if not apartment:
-            messages.error(request, "No apartment exists in the system yet.")
+            messages.error(request, "No apartment exists.")
             return redirect('tenant_dashboard')
 
         lease = Lease.objects.create(
@@ -237,12 +271,8 @@ def payment_form(request):
             deposit=0
         )
 
-        apartment.available = False
-        apartment.save()
-
     if request.method == 'POST':
         form = PaymentForm(request.POST)
-
         if form.is_valid():
             Payment.objects.create(
                 tenant=tenant,
@@ -252,7 +282,7 @@ def payment_form(request):
                 paid_date=date.today(),
                 method=form.cleaned_data['payment_method']
             )
-            messages.success(request, "Payment recorded successfully.")
+            messages.success(request, "Payment successful.")
             return redirect('tenant_dashboard')
     else:
         form = PaymentForm()
@@ -260,30 +290,32 @@ def payment_form(request):
     return render(request, 'tenant/payment_form.html', {'form': form})
 
 
+# -------------------
+# MAINTENANCE
+# -------------------
 @login_required
 def maintenance_request(request):
+
+    if request.user.role != 'TENANT':
+        return redirect('admin_dashboard')
+
     tenant = Tenant.objects.filter(user=request.user).first()
 
     if not tenant:
-        messages.error(request, "No tenant profile is linked to this account.")
+        messages.error(request, "No tenant profile.")
         return redirect('tenant_dashboard')
 
     lease = Lease.objects.filter(tenant=tenant).first()
-    apartment = lease.apartment if lease else (Apartment.objects.first())
-
-    if not apartment:
-        messages.error(request, "No apartment exists in the system yet.")
-        return redirect('tenant_dashboard')
+    apartment = lease.apartment if lease else Apartment.objects.first()
 
     if request.method == 'POST':
         form = MaintenanceRequestForm(request.POST)
-
         if form.is_valid():
             mr = form.save(commit=False)
             mr.tenant = tenant
             mr.apartment = apartment
             mr.save()
-            messages.success(request, "Maintenance request submitted successfully.")
+            messages.success(request, "Request submitted.")
             return redirect('tenant_dashboard')
     else:
         form = MaintenanceRequestForm()
@@ -291,30 +323,32 @@ def maintenance_request(request):
     return render(request, 'tenant/maintenance_request_form.html', {'form': form})
 
 
+# -------------------
+# COMPLAINT
+# -------------------
 @login_required
 def complaint_form(request):
+
+    if request.user.role != 'TENANT':
+        return redirect('admin_dashboard')
+
     tenant = Tenant.objects.filter(user=request.user).first()
 
     if not tenant:
-        messages.error(request, "No tenant profile is linked to this account.")
+        messages.error(request, "No tenant profile.")
         return redirect('tenant_dashboard')
 
     lease = Lease.objects.filter(tenant=tenant).first()
-    apartment = lease.apartment if lease else (Apartment.objects.first())
-
-    if not apartment:
-        messages.error(request, "No apartment exists in the system yet.")
-        return redirect('tenant_dashboard')
+    apartment = lease.apartment if lease else Apartment.objects.first()
 
     if request.method == 'POST':
         form = ComplaintForm(request.POST)
-
         if form.is_valid():
             complaint = form.save(commit=False)
             complaint.tenant = tenant
             complaint.apartment = apartment
             complaint.save()
-            messages.success(request, "Complaint submitted successfully.")
+            messages.success(request, "Complaint submitted.")
             return redirect('tenant_dashboard')
     else:
         form = ComplaintForm()
