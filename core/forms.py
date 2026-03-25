@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Tenant, Complaint, MaintenanceRequest, Payment
+from .models import User, City, Tenant, Complaint, MaintenanceRequest, Payment
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -100,3 +100,14 @@ class PaymentForm(forms.Form):
         choices=Payment.METHOD_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+
+class CityForm(forms.ModelForm):
+    class Meta:
+        model = City
+        fields = ['name', 'state', 'country', 'zipcode']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'state': forms.TextInput(attrs={'class': 'form-control'}),
+            'country': forms.TextInput(attrs={'class': 'form-control'}),
+            'zipcode': forms.TextInput(attrs={'class': 'form-control'}),
+        }

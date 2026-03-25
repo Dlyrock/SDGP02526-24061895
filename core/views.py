@@ -1,8 +1,9 @@
 import json
 from datetime import date, timedelta
+from decimal import Decimal
 
-from django.shortcuts import render, redirect
-from django.db.models import F
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import F, Sum, Count
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -10,12 +11,15 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from .forms import (
     CustomUserCreationForm,
+    TenantForm,
     MaintenanceRequestForm,
     ComplaintForm,
     PaymentForm,
+    CityForm,
 )
 from .models import (
     User,
+    City,
     Tenant,
     Apartment,
     Payment,
@@ -221,6 +225,27 @@ def admin_dashboard(request):
 
         late_payments[apt.address] = late_count
 
+    # Build tenant vs neighbors data for admin charts (fixes JS bug)
+    tenant_vs_neighbors_list = []
+    for tenant in tenants:
+        lease = Lease.objects.filter(tenant=tenant).first()
+        apartment = lease.apartment if lease else None
+        neighbor_data = []
+        if apartment:
+            neighbor_tenants = Tenant.objects.filter(
+                lease__apartment=apartment
+            ).exclude(id=tenant.id)
+            for n in neighbor_tenants:
+                n_payments = list(Payment.objects.filter(tenant=n).values_list('amount', flat=True))
+                neighbor_data.append({
+                    'name': n.first_name,
+                    'payments': [float(p) for p in n_payments],
+                })
+        tenant_vs_neighbors_list.append({
+            'tenant_name': f"{tenant.first_name} {tenant.last_name}",
+            'neighbors': neighbor_data,
+        })
+
     context = {
         'tenants': tenants,
         'available_apartments': available_apartments,
@@ -228,6 +253,7 @@ def admin_dashboard(request):
         'recent_requests': recent_requests,
         'recent_complaints': recent_complaints,
         'tenant_payments_json': json.dumps(tenant_payments_list),
+        'tenant_vs_neighbors_json': json.dumps(tenant_vs_neighbors_list),
         'late_payments_json': json.dumps(late_payments),
         'maintenance_summary': {
             'pending': MaintenanceRequest.objects.filter(status='pending').count(),
@@ -354,3 +380,240 @@ def complaint_form(request):
         form = ComplaintForm()
 
     return render(request, 'tenant/complaint_form.html', {'form': form})
+
+# -------------------
+# STAFF PANEL
+# -------------------
+@login_required
+def staff_panel(request):
+    if request.user.role not in ['ADMIN', 'MANAGER', 'FRONTDESK', 'FINANCE', 'MAINTENANCE']:
+        return redirect('tenant_dashboard')
+
+    maintenance_requests = MaintenanceRequest.objects.select_related('tenant', 'apartment').order_by('-date_requested')
+    complaints = Complaint.objects.select_related('tenant', 'apartment').order_by('-date')
+
+    return render(request, 'admin/staff_panel.html', {
+        'maintenance_requests': maintenance_requests,
+        'complaints': complaints,
+    })
+
+
+# -------------------
+# UPDATE MAINTENANCE STATUS (staff)
+# -------------------
+@login_required
+def update_maintenance(request, pk):
+    if request.user.role not in ['ADMIN', 'MANAGER', 'MAINTENANCE', 'FRONTDESK']:
+        return redirect('tenant_dashboard')
+
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        cost = request.POST.get('cost', 0)
+        scheduled_date = request.POST.get('scheduled_date', None)
+        time_taken = request.POST.get('time_taken', None)
+
+        if new_status in ['pending', 'in_progress', 'completed']:
+            mr.status = new_status
+
+        if cost:
+            try:
+                mr.cost = Decimal(cost)
+            except Exception:
+                pass
+
+        if scheduled_date:
+            mr.scheduled_date = scheduled_date
+
+        if time_taken:
+            mr.time_taken = time_taken
+
+        if new_status == 'completed':
+            mr.resolved_date = date.today()
+
+        mr.save()
+        messages.success(request, f"Maintenance request updated to '{new_status}'.")
+
+    return redirect('staff_panel')
+
+
+# -------------------
+# RESOLVE COMPLAINT (staff)
+# -------------------
+@login_required
+def resolve_complaint(request, pk):
+    if request.user.role not in ['ADMIN', 'MANAGER', 'FRONTDESK']:
+        return redirect('tenant_dashboard')
+
+    complaint = get_object_or_404(Complaint, pk=pk)
+    complaint.status = 'resolved'
+    complaint.save()
+    messages.success(request, "Complaint marked as resolved.")
+    return redirect('staff_panel')
+
+
+# -------------------
+# DELETE COMPLAINT (admin only)
+# -------------------
+@login_required
+def delete_complaint(request, pk):
+    if request.user.role not in ['ADMIN', 'MANAGER']:
+        messages.error(request, "You don't have permission to delete complaints.")
+        return redirect('staff_panel')
+
+    complaint = get_object_or_404(Complaint, pk=pk)
+    complaint.delete()
+    messages.success(request, "Complaint deleted.")
+    return redirect('staff_panel')
+
+
+# -------------------
+# FRONTDESK PANEL
+# -------------------
+@login_required
+def frontdesk_panel(request):
+    if request.user.role not in ['FRONTDESK', 'ADMIN', 'MANAGER']:
+        return redirect('tenant_dashboard')
+
+    query = request.GET.get('q', '')
+    tenants = Tenant.objects.all()
+
+    if query:
+        tenants = tenants.filter(
+            first_name__icontains=query
+        ) | tenants.filter(
+            last_name__icontains=query
+        ) | tenants.filter(
+            email__icontains=query
+        ) | tenants.filter(
+            ni_number__icontains=query
+        )
+
+    tenants = tenants.select_related('user').order_by('last_name')
+
+    maintenance_requests = MaintenanceRequest.objects.select_related('tenant').order_by('-date_requested')[:10]
+    complaints = Complaint.objects.select_related('tenant').order_by('-date')[:10]
+
+    return render(request, 'admin/frontdesk_panel.html', {
+        'tenants': tenants,
+        'query': query,
+        'maintenance_requests': maintenance_requests,
+        'complaints': complaints,
+    })
+
+
+# -------------------
+# FRONTDESK — ADD TENANT
+# -------------------
+@login_required
+def frontdesk_add_tenant(request):
+    if request.user.role not in ['FRONTDESK', 'ADMIN', 'MANAGER']:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        form = TenantForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tenant registered successfully.")
+            return redirect('frontdesk_panel')
+    else:
+        form = TenantForm()
+
+    return render(request, 'admin/frontdesk_add_tenant.html', {'form': form})
+
+
+# -------------------
+# FINANCE PANEL
+# -------------------
+@login_required
+def finance_panel(request):
+    if request.user.role not in ['FINANCE', 'ADMIN', 'MANAGER']:
+        return redirect('tenant_dashboard')
+
+    # All payments
+    all_payments = Payment.objects.select_related('tenant', 'lease__apartment').order_by('-due_date')
+
+    # Late payments
+    late_payments = [p for p in all_payments if p.is_late]
+
+    # Financial summary
+    total_collected = all_payments.filter(paid_date__isnull=False).aggregate(total=Sum('amount'))['total'] or 0
+    total_pending = all_payments.filter(paid_date__isnull=True).aggregate(total=Sum('amount'))['total'] or 0
+
+    # Per-apartment summary
+    apartments = Apartment.objects.all()
+    apt_summary = []
+    for apt in apartments:
+        collected = Payment.objects.filter(
+            lease__apartment=apt, paid_date__isnull=False
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        pending = Payment.objects.filter(
+            lease__apartment=apt, paid_date__isnull=True
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        apt_summary.append({
+            'apartment': apt,
+            'collected': collected,
+            'pending': pending,
+        })
+
+    return render(request, 'admin/finance_panel.html', {
+        'all_payments': all_payments[:50],
+        'late_payments': late_payments,
+        'total_collected': total_collected,
+        'total_pending': total_pending,
+        'apt_summary': apt_summary,
+    })
+
+
+# -------------------
+# MANAGER PANEL
+# -------------------
+@login_required
+def manager_panel(request):
+    if request.user.role not in ['MANAGER', 'ADMIN']:
+        return redirect('tenant_dashboard')
+
+    cities = City.objects.all()
+    city_stats = []
+
+    for city in cities:
+        total_apts = Apartment.objects.filter(city=city).count()
+        occupied = Apartment.objects.filter(city=city, available=False).count()
+        available = Apartment.objects.filter(city=city, available=True).count()
+        revenue = Payment.objects.filter(
+            lease__apartment__city=city, paid_date__isnull=False
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        city_stats.append({
+            'city': city,
+            'total': total_apts,
+            'occupied': occupied,
+            'available': available,
+            'revenue': revenue,
+            'occupancy_rate': round((occupied / total_apts * 100), 1) if total_apts > 0 else 0,
+        })
+
+    return render(request, 'admin/manager_panel.html', {
+        'city_stats': city_stats,
+    })
+
+
+# -------------------
+# MANAGER — ADD CITY
+# -------------------
+@login_required
+def manager_add_city(request):
+    if request.user.role not in ['MANAGER', 'ADMIN']:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        form = CityForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"City '{form.cleaned_data['name']}' added successfully.")
+            return redirect('manager_panel')
+    else:
+        form = CityForm()
+
+    return render(request, 'admin/manager_add_city.html', {'form': form})

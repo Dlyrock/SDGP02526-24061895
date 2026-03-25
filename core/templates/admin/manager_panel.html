@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Manager Panel{% endblock %}
+{% block content %}
+<div class="container py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Manager Panel</h2>
+    <a href="{% url 'manager_add_city' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Expand to New City
+    </a>
+  </div>
+
+  <div class="row g-4">
+    {% for stat in city_stats %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-geo-alt me-1"></i>{{ stat.city.name }}
+          <span class="text-muted small">({{ stat.city.country }})</span>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-2 mb-3">
+            <div class="col-4">
+              <div class="fw-bold fs-4">{{ stat.total }}</div>
+              <div class="text-muted small">Total</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold fs-4 text-danger">{{ stat.occupied }}</div>
+              <div class="text-muted small">Occupied</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold fs-4 text-success">{{ stat.available }}</div>
+              <div class="text-muted small">Available</div>
+            </div>
+          </div>
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>Occupancy Rate</span>
+              <span class="fw-semibold">{{ stat.occupancy_rate }}%</span>
+            </div>
+            <div class="progress" style="height:8px;">
+              <div class="progress-bar bg-primary" style="width:{{ stat.occupancy_rate }}%"></div>
+            </div>
+          </div>
+          <div class="text-success fw-semibold mt-2">£{{ stat.revenue }} collected</div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="alert alert-info">No cities yet. <a href="{% url 'manager_add_city' %}">Add the first city.</a></div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

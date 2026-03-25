@@ -47,11 +47,48 @@
                         </li>
                     {% endif %}
 
-                    {% if user.role != "TENANT" %}
+                    {% if user.role == "FRONTDESK" %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin_dashboard' %}">
-                                Staff Dashboard
-                            </a>
+                            <a class="nav-link" href="{% url 'frontdesk_panel' %}">Front Desk</a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role == "FINANCE" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'finance_panel' %}">Finance</a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role == "MAINTENANCE" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'staff_panel' %}">Maintenance</a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role == "ADMIN" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_dashboard' %}">Admin Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'staff_panel' %}">Staff Panel</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'frontdesk_panel' %}">Front Desk</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'finance_panel' %}">Finance</a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role == "MANAGER" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'manager_panel' %}">Manager Panel</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'finance_panel' %}">Finance</a>
                         </li>
                     {% endif %}
 

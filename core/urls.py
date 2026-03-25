@@ -23,8 +23,29 @@ urlpatterns = [
     path('dashboard/tenant/', views.tenant_dashboard, name='tenant_dashboard'),
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
 
-    # TENANT ACTIONS (CLEAN URLS)
+    # TENANT ACTIONS
     path('payment/', views.payment_form, name='payment_form'),
     path('maintenance/', views.maintenance_request, name='maintenance_request'),
     path('complaint/', views.complaint_form, name='complaint_form'),
+
+    # STAFF PANEL
+    path('staff/', views.staff_panel, name='staff_panel'),
+
+    # MAINTENANCE MANAGEMENT (staff)
+    path('staff/maintenance/<int:pk>/update/', views.update_maintenance, name='update_maintenance'),
+
+    # COMPLAINT MANAGEMENT (staff)
+    path('staff/complaint/<int:pk>/resolve/', views.resolve_complaint, name='resolve_complaint'),
+    path('staff/complaint/<int:pk>/delete/', views.delete_complaint, name='delete_complaint'),
+
+    # FRONTDESK
+    path('frontdesk/', views.frontdesk_panel, name='frontdesk_panel'),
+    path('frontdesk/tenant/add/', views.frontdesk_add_tenant, name='frontdesk_add_tenant'),
+
+    # FINANCE
+    path('finance/', views.finance_panel, name='finance_panel'),
+
+    # MANAGER
+    path('manager/', views.manager_panel, name='manager_panel'),
+    path('manager/city/add/', views.manager_add_city, name='manager_add_city'),
 ]

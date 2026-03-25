@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Front Desk Panel{% endblock %}
+{% block content %}
+<div class="container py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Front Desk Panel</h2>
+    <a href="{% url 'frontdesk_add_tenant' %}" class="btn btn-primary">
+      <i class="bi bi-person-plus me-1"></i>Register New Tenant
+    </a>
+  </div>
+
+  <!-- Tenant Search -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Search Tenants</div>
+    <div class="card-body">
+      <form method="get">
+        <div class="input-group">
+          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by name, email or NI number...">
+          <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tenant List -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Tenants ({{ tenants|length }})</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>NI Number</th>
+            <th>Lease</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tenant in tenants %}
+          <tr>
+            <td>{{ tenant.first_name }} {{ tenant.last_name }}</td>
+            <td>{{ tenant.email }}</td>
+            <td>{{ tenant.phone }}</td>
+            <td>{{ tenant.ni_number|default:"—" }}</td>
+            <td>
+              {% with lease=tenant.lease_set.first %}
+                {% if lease %}
+                  <span class="badge bg-success">Active — ends {{ lease.end_date }}</span>
+                {% else %}
+                  <span class="badge bg-secondary">No lease</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted p-4">No tenants found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Maintenance -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Recent Maintenance Requests</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Tenant</th><th>Description</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for req in maintenance_requests %}
+          <tr>
+            <td>{{ req.tenant.first_name }} {{ req.tenant.last_name }}</td>
+            <td>{{ req.description|truncatechars:60 }}</td>
+            <td>
+              {% if req.status == 'pending' %}<span class="badge bg-danger">Pending</span>
+              {% elif req.status == 'in_progress' %}<span class="badge bg-warning text-dark">In Progress</span>
+              {% else %}<span class="badge bg-success">Completed</span>{% endif %}
+            </td>
+            <td>{{ req.date_requested }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted p-3">No requests.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Complaints -->
+  <div class="card">
+    <div class="card-header fw-semibold">Recent Complaints</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Tenant</th><th>Description</th><th>Status</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for comp in complaints %}
+          <tr>
+            <td>{{ comp.tenant.first_name }} {{ comp.tenant.last_name }}</td>
+            <td>{{ comp.description|truncatechars:60 }}</td>
+            <td>
+              {% if comp.status == 'open' %}<span class="badge bg-danger">Open</span>
+              {% elif comp.status == 'investigating' %}<span class="badge bg-warning text-dark">Investigating</span>
+              {% elif comp.status == 'resolved' %}<span class="badge bg-success">Resolved</span>
+              {% else %}<span class="badge bg-secondary">Closed</span>{% endif %}
+            </td>
+            <td>{{ comp.date }}</td>
+            <td>
+              {% if comp.status != 'resolved' %}
+              <a href="{% url 'resolve_complaint' comp.id %}" class="btn btn-sm btn-success">Resolve</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted p-3">No complaints.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

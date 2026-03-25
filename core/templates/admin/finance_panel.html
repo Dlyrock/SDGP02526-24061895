@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Finance Panel{% endblock %}
+{% block content %}
+<div class="container py-3">
+
+  <h2 class="fw-bold mb-4">Finance Panel</h2>
+
+  <!-- Summary Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Total Collected</h6>
+          <h3 class="fw-bold text-success">£{{ total_collected }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Total Pending</h6>
+          <h3 class="fw-bold text-danger">£{{ total_pending }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Late Payments</h6>
+          <h3 class="fw-bold text-warning">{{ late_payments|length }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per Apartment Summary -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Financial Summary by Apartment</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Apartment</th><th>City</th><th>Collected</th><th>Pending</th></tr>
+        </thead>
+        <tbody>
+          {% for row in apt_summary %}
+          <tr>
+            <td>{{ row.apartment.address }}</td>
+            <td>{{ row.apartment.city.name }}</td>
+            <td class="text-success fw-semibold">£{{ row.collected }}</td>
+            <td class="text-danger fw-semibold">£{{ row.pending }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted p-3">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Late Payments -->
+  {% if late_payments %}
+  <div class="card mb-4">
+    <div class="card-header fw-semibold text-danger">Late Payments</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Tenant</th><th>Amount</th><th>Due Date</th><th>Apartment</th></tr>
+        </thead>
+        <tbody>
+          {% for payment in late_payments %}
+          <tr>
+            <td>{{ payment.tenant.first_name }} {{ payment.tenant.last_name }}</td>
+            <td class="fw-semibold">£{{ payment.amount }}</td>
+            <td><span class="badge bg-danger">{{ payment.due_date }}</span></td>
+            <td>{{ payment.lease.apartment.address }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- All Payments -->
+  <div class="card">
+    <div class="card-header fw-semibold">All Payments (latest 50)</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Tenant</th><th>Amount</th><th>Method</th><th>Due Date</th><th>Paid Date</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for payment in all_payments %}
+          <tr>
+            <td>{{ payment.tenant.first_name }} {{ payment.tenant.last_name }}</td>
+            <td>£{{ payment.amount }}</td>
+            <td>{{ payment.get_method_display }}</td>
+            <td>{{ payment.due_date }}</td>
+            <td>{{ payment.paid_date|default:"—" }}</td>
+            <td>
+              {% if payment.paid_date %}
+                {% if payment.is_late %}
+                  <span class="badge bg-warning text-dark">Paid Late</span>
+                {% else %}
+                  <span class="badge bg-success">Paid</span>
+                {% endif %}
+              {% else %}
+                <span class="badge bg-danger">Unpaid</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted p-3">No payments.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
