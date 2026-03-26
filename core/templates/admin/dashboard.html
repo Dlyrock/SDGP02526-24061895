@@ -96,31 +96,22 @@
     <div class="row g-4 mb-4">
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">
-                    Available Apartments
-                </div>
+                <div class="card-header">Available Apartments</div>
                 <ul class="list-group list-group-flush">
                     {% for apt in available_apartments %}
-                        <li class="list-group-item">
-                            {{ apt.address }}, {{ apt.city.name }} - {{ apt.bedrooms }} beds
-                        </li>
+                        <li class="list-group-item">{{ apt.address }}, {{ apt.city.name }} - {{ apt.bedrooms }} beds</li>
                     {% empty %}
                         <li class="list-group-item text-muted">No available apartments.</li>
                     {% endfor %}
                 </ul>
             </div>
         </div>
-
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">
-                    Occupied Apartments
-                </div>
+                <div class="card-header">Occupied Apartments</div>
                 <ul class="list-group list-group-flush">
                     {% for apt in occupied_apartments %}
-                        <li class="list-group-item">
-                            {{ apt.address }}, {{ apt.city.name }} - {{ apt.bedrooms }} beds
-                        </li>
+                        <li class="list-group-item">{{ apt.address }}, {{ apt.city.name }} - {{ apt.bedrooms }} beds</li>
                     {% empty %}
                         <li class="list-group-item text-muted">No occupied apartments.</li>
                     {% endfor %}
@@ -133,9 +124,7 @@
     <div class="row g-4 mb-4">
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">
-                    Recent Maintenance Requests
-                </div>
+                <div class="card-header">Recent Maintenance Requests</div>
                 <ul class="list-group list-group-flush">
                     {% for req in recent_requests %}
                         <li class="list-group-item">
@@ -148,12 +137,9 @@
                 </ul>
             </div>
         </div>
-
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">
-                    Recent Complaints
-                </div>
+                <div class="card-header">Recent Complaints</div>
                 <ul class="list-group list-group-flush">
                     {% for comp in recent_complaints %}
                         <li class="list-group-item">
@@ -168,11 +154,9 @@
         </div>
     </div>
 
-    <!-- Late Payments Pie Chart -->
+    <!-- Late Payments Chart -->
     <div class="card mb-4">
-        <div class="card-header">
-            Late Payments per Apartment
-        </div>
+        <div class="card-header">Late Payments per Apartment</div>
         <div class="card-body">
             <div style="height: 320px;">
                 <canvas id="latePaymentsChart"></canvas>
@@ -182,9 +166,7 @@
 
     <!-- Maintenance Summary -->
     <div class="card mb-4">
-        <div class="card-header">
-            Maintenance Summary
-        </div>
+        <div class="card-header">Maintenance Summary</div>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">Pending: {{ maintenance_summary.pending }}</li>
             <li class="list-group-item">In Progress: {{ maintenance_summary.in_progress }}</li>
@@ -196,25 +178,18 @@
 {% endblock %}
 
 {% block scripts %}
-
 {{ tenant_payments_json|json_script:"tenant-payments-data" }}
 {{ tenant_vs_neighbors_json|json_script:"tenant-neighbors-data" }}
 {{ late_payments_json|json_script:"late-payments-data" }}
 
 <script>
-    // Accordion Open/Close All
     const toggleBtn = document.getElementById("toggleAllBtn");
     let allOpen = false;
-
     if (toggleBtn) {
         toggleBtn.addEventListener("click", () => {
             document.querySelectorAll("#tenantsAccordion .accordion-collapse").forEach((el) => {
                 const bsCollapse = new bootstrap.Collapse(el, { toggle: false });
-                if (allOpen) {
-                    bsCollapse.hide();
-                } else {
-                    bsCollapse.show();
-                }
+                allOpen ? bsCollapse.hide() : bsCollapse.show();
             });
             allOpen = !allOpen;
         });
@@ -222,94 +197,59 @@
 
     // Tenant Payments Charts
     const tenantPaymentsEl = document.getElementById("tenant-payments-data");
-    const tenantPayments = tenantPaymentsEl ? JSON.parse(tenantPaymentsEl.textContent) : [];
+    let tenantPayments = [];
+    try {
+        const parsed = tenantPaymentsEl ? JSON.parse(tenantPaymentsEl.textContent) : [];
+        tenantPayments = Array.isArray(parsed) ? parsed : [];
+    } catch(e) { console.warn("tenant-payments-data parse error", e); }
 
     tenantPayments.forEach((item) => {
         const canvas = document.getElementById(`paymentChart${item.tenant_id}`);
         if (!canvas) return;
-
         new Chart(canvas.getContext("2d"), {
             type: "line",
             data: {
                 labels: item.dates,
-                datasets: [{
-                    label: "Payments",
-                    data: item.amounts,
-                    borderColor: "#2563eb",
-                    backgroundColor: "rgba(37, 99, 235, 0.10)",
-                    tension: 0.3,
-                    fill: true
-                }]
+                datasets: [{ label: "Payments", data: item.amounts, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.10)", tension: 0.3, fill: true }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: true }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     });
 
     // Tenant vs Neighbors Charts
     const tenantNeighborsEl = document.getElementById("tenant-neighbors-data");
-    const tenantNeighbors = tenantNeighborsEl ? JSON.parse(tenantNeighborsEl.textContent) : [];
+    let tenantNeighbors = [];
+    try {
+        const parsedN = tenantNeighborsEl ? JSON.parse(tenantNeighborsEl.textContent) : [];
+        tenantNeighbors = Array.isArray(parsedN) ? parsedN : [];
+    } catch(e) { console.warn("tenant-neighbors-data parse error", e); }
 
     tenantNeighbors.forEach((item) => {
         const matchingTenant = tenantPayments.find((t) => t.tenant_name === item.tenant_name);
         if (!matchingTenant) return;
-
         const canvas = document.getElementById(`neighborChart${matchingTenant.tenant_id}`);
         if (!canvas) return;
-
         const labels = [item.tenant_name, ...item.neighbors.map((n) => n.name)];
         const paymentsData = [
             matchingTenant.amounts.reduce((a, b) => a + b, 0),
             ...item.neighbors.map((n) => n.payments.reduce((a, b) => a + b, 0))
         ];
-
         new Chart(canvas.getContext("2d"), {
             type: "bar",
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Total Payments",
-                    data: paymentsData,
-                    backgroundColor: [
-                        "#2563eb",
-                        "#f59e0b",
-                        "#10b981",
-                        "#94a3b8",
-                        "#ef4444"
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: true }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
+            data: { labels, datasets: [{ label: "Total Payments", data: paymentsData, backgroundColor: ["#2563eb","#f59e0b","#10b981","#94a3b8","#ef4444"] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
     });
 
     // Late Payments Bar Chart
     const latePaymentsEl = document.getElementById("late-payments-data");
-    const latePayments = latePaymentsEl ? JSON.parse(latePaymentsEl.textContent) : {};
+    let latePayments = {};
+    try { latePayments = latePaymentsEl ? JSON.parse(latePaymentsEl.textContent) : {}; } catch(e) {}
 
     const lateCanvas = document.getElementById("latePaymentsChart");
     if (lateCanvas) {
         const lateLabels = Object.keys(latePayments);
         const lateValues = Object.values(latePayments);
-
         if (lateLabels.length === 0) {
             lateCanvas.parentElement.innerHTML = '<p class="text-muted text-center pt-5">No apartment data available.</p>';
         } else {
@@ -317,46 +257,22 @@
                 type: "bar",
                 data: {
                     labels: lateLabels,
-                    datasets: [{
-                        label: "Late Payments",
-                        data: lateValues,
-                        backgroundColor: lateValues.map(v => v > 0 ? "#ef4444" : "#10b981"),
-                        borderRadius: 6,
-                    }]
+                    datasets: [{ label: "Late Payments", data: lateValues, backgroundColor: lateValues.map(v => v > 0 ? "#ef4444" : "#10b981"), borderRadius: 6 }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => ctx.parsed.y === 0
-                                    ? 'No late payments'
-                                    : ctx.parsed.y + ' late payment(s)'
-                            }
-                        }
+                        tooltip: { callbacks: { label: ctx => ctx.parsed.y === 0 ? 'No late payments' : ctx.parsed.y + ' late payment(s)' } }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { stepSize: 1 },
-                            title: { display: true, text: 'Number of Late Payments' }
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 30,
-                                callback: function(val, index) {
-                                    const label = this.getLabelForValue(index);
-                                    return label.length > 20 ? label.substring(0, 20) + '...' : label;
-                                }
-                            }
-                        }
+                        y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Number of Late Payments' } },
+                        x: { ticks: { maxRotation: 30, callback: function(val, index) { const label = this.getLabelForValue(index); return label.length > 20 ? label.substring(0, 20) + '...' : label; } } }
                     }
                 }
             });
         }
     }
 </script>
-
 {% endblock %}
