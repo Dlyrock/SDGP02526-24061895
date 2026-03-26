@@ -665,3 +665,108 @@ def request_early_termination(request):
         'notice_end_date': notice_end_date,
         'penalty': penalty,
     })
+
+
+# -------------------
+# REPORTS PAGE
+# -------------------
+@login_required
+def reports(request):
+    if request.user.role not in ['ADMIN', 'MANAGER', 'FINANCE']:
+        return redirect('tenant_dashboard')
+
+    from django.db.models import Sum, Count
+
+    # --- 1. Occupancy Report ---
+    cities = City.objects.all()
+    occupancy_data = []
+    for city in cities:
+        total = Apartment.objects.filter(city=city).count()
+        occupied = Apartment.objects.filter(city=city, available=False).count()
+        available = Apartment.objects.filter(city=city, available=True).count()
+        rate = round((occupied / total * 100), 1) if total > 0 else 0
+        occupancy_data.append({
+            'city': city.name,
+            'total': total,
+            'occupied': occupied,
+            'available': available,
+            'rate': rate,
+        })
+
+    # --- 2. Financial Summary ---
+    total_collected = Payment.objects.filter(
+        paid_date__isnull=False
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    total_pending = Payment.objects.filter(
+        paid_date__isnull=True
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    total_late = len([p for p in Payment.objects.all() if p.is_late and not p.paid_date])
+
+    apt_financial = []
+    for apt in Apartment.objects.all():
+        collected = Payment.objects.filter(
+            lease__apartment=apt, paid_date__isnull=False
+        ).aggregate(t=Sum('amount'))['t'] or 0
+        pending = Payment.objects.filter(
+            lease__apartment=apt, paid_date__isnull=True
+        ).aggregate(t=Sum('amount'))['t'] or 0
+        apt_financial.append({
+            'address': apt.address,
+            'city': apt.city.name,
+            'collected': collected,
+            'pending': pending,
+        })
+
+    # --- 3. Maintenance Cost Report ---
+    maintenance_data = MaintenanceRequest.objects.select_related(
+        'apartment', 'tenant'
+    ).order_by('-date_requested')
+
+    total_maintenance_cost = maintenance_data.aggregate(
+        total=Sum('cost')
+    )['total'] or 0
+
+    maintenance_by_apt = []
+    for apt in Apartment.objects.all():
+        cost = MaintenanceRequest.objects.filter(
+            apartment=apt
+        ).aggregate(t=Sum('cost'))['t'] or 0
+        count = MaintenanceRequest.objects.filter(apartment=apt).count()
+        if count > 0:
+            maintenance_by_apt.append({
+                'address': apt.address,
+                'city': apt.city.name,
+                'count': count,
+                'cost': cost,
+            })
+
+    # Chart data
+    import json as json_mod
+    occupancy_chart = {
+        'labels': [d['city'] for d in occupancy_data],
+        'occupied': [d['occupied'] for d in occupancy_data],
+        'available': [d['available'] for d in occupancy_data],
+    }
+
+    financial_chart = {
+        'labels': [d['address'][:20] for d in apt_financial],
+        'collected': [float(d['collected']) for d in apt_financial],
+        'pending': [float(d['pending']) for d in apt_financial],
+    }
+
+    context = {
+        'occupancy_data': occupancy_data,
+        'total_collected': total_collected,
+        'total_pending': total_pending,
+        'total_late': total_late,
+        'apt_financial': apt_financial,
+        'maintenance_data': maintenance_data,
+        'total_maintenance_cost': total_maintenance_cost,
+        'maintenance_by_apt': maintenance_by_apt,
+        'occupancy_chart_json': json_mod.dumps(occupancy_chart),
+        'financial_chart_json': json_mod.dumps(financial_chart),
+    }
+
+    return render(request, 'admin/reports.html', context)

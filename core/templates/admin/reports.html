@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+
+  <h2 class="fw-bold mb-4">Reports</h2>
+
+  <!-- Summary Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Total Collected</h6>
+          <h3 class="fw-bold text-success">£{{ total_collected }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Total Pending</h6>
+          <h3 class="fw-bold text-danger">£{{ total_pending }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Unpaid Late</h6>
+          <h3 class="fw-bold text-warning">{{ total_late }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Maintenance Costs</h6>
+          <h3 class="fw-bold text-info">£{{ total_maintenance_cost }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Occupancy Report -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-building me-1"></i>Occupancy Report by City
+    </div>
+    <div class="row g-0">
+      <div class="col-lg-5">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>City</th><th>Total</th><th>Occupied</th><th>Available</th><th>Rate</th></tr>
+            </thead>
+            <tbody>
+              {% for row in occupancy_data %}
+              <tr>
+                <td class="fw-semibold">{{ row.city }}</td>
+                <td>{{ row.total }}</td>
+                <td class="text-danger">{{ row.occupied }}</td>
+                <td class="text-success">{{ row.available }}</td>
+                <td>
+                  <div class="progress" style="height:8px;width:80px;">
+                    <div class="progress-bar bg-primary" style="width:{{ row.rate }}%"></div>
+                  </div>
+                  <small>{{ row.rate }}%</small>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted p-3">No data.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="p-3" style="height:280px;">
+          <canvas id="occupancyChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Financial Summary -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-cash-stack me-1"></i>Financial Summary — Collected vs Pending
+    </div>
+    <div class="row g-0">
+      <div class="col-lg-5">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Apartment</th><th>City</th><th>Collected</th><th>Pending</th></tr>
+            </thead>
+            <tbody>
+              {% for row in apt_financial %}
+              <tr>
+                <td>{{ row.address }}</td>
+                <td>{{ row.city }}</td>
+                <td class="text-success fw-semibold">£{{ row.collected }}</td>
+                <td class="text-danger fw-semibold">£{{ row.pending }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted p-3">No data.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="p-3" style="height:280px;">
+          <canvas id="financialChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Maintenance Cost Report -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-tools me-1"></i>Maintenance Cost Report
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Apartment</th><th>City</th><th>Requests</th><th>Total Cost</th></tr>
+        </thead>
+        <tbody>
+          {% for row in maintenance_by_apt %}
+          <tr>
+            <td>{{ row.address }}</td>
+            <td>{{ row.city }}</td>
+            <td>{{ row.count }}</td>
+            <td class="fw-semibold">£{{ row.cost }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted p-3">No maintenance data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Maintenance Log -->
+  <div class="card">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-list-check me-1"></i>Maintenance Request Log
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Tenant</th><th>Apartment</th><th>Description</th><th>Status</th><th>Cost</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for req in maintenance_data %}
+          <tr>
+            <td>{{ req.tenant.first_name }} {{ req.tenant.last_name }}</td>
+            <td>{{ req.apartment.address }}</td>
+            <td>{{ req.description|truncatechars:50 }}</td>
+            <td>
+              {% if req.status == 'pending' %}<span class="badge bg-danger">Pending</span>
+              {% elif req.status == 'in_progress' %}<span class="badge bg-warning text-dark">In Progress</span>
+              {% else %}<span class="badge bg-success">Completed</span>{% endif %}
+            </td>
+            <td>£{{ req.cost }}</td>
+            <td>{{ req.date_requested }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted p-3">No requests.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ occupancy_chart_json|json_script:"occupancy-data" }}
+{{ financial_chart_json|json_script:"financial-data" }}
+
+<script>
+  // Occupancy Chart
+  const occEl = document.getElementById("occupancy-data");
+  const occData = occEl ? JSON.parse(occEl.textContent) : {};
+  const occCanvas = document.getElementById("occupancyChart");
+  if (occCanvas && occData.labels && occData.labels.length > 0) {
+    new Chart(occCanvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: occData.labels,
+        datasets: [
+          { label: "Occupied", data: occData.occupied, backgroundColor: "#ef4444", borderRadius: 4 },
+          { label: "Available", data: occData.available, backgroundColor: "#10b981", borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { stacked: false } }
+      }
+    });
+  }
+
+  // Financial Chart
+  const finEl = document.getElementById("financial-data");
+  const finData = finEl ? JSON.parse(finEl.textContent) : {};
+  const finCanvas = document.getElementById("financialChart");
+  if (finCanvas && finData.labels && finData.labels.length > 0) {
+    new Chart(finCanvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: finData.labels,
+        datasets: [
+          { label: "Collected (£)", data: finData.collected, backgroundColor: "#10b981", borderRadius: 4 },
+          { label: "Pending (£)", data: finData.pending, backgroundColor: "#ef4444", borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+</script>
+{% endblock %}

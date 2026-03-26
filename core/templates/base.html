@@ -78,6 +78,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'finance_panel' %}">Finance</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'reports' %}">Reports</a>
+                        </li>
                     {% endif %}
 
                     {% if user.role == "MANAGER" %}
@@ -89,6 +92,15 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'finance_panel' %}">Finance</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'reports' %}">Reports</a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role == "FINANCE" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'reports' %}">Reports</a>
                         </li>
                     {% endif %}
 

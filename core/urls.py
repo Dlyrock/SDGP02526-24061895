@@ -49,4 +49,5 @@ urlpatterns = [
     # MANAGER
     path('manager/', views.manager_panel, name='manager_panel'),
     path('manager/city/add/', views.manager_add_city, name='manager_add_city'),
+    path('reports/', views.reports, name='reports'),
 ]
