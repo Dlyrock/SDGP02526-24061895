@@ -1,84 +1,66 @@
 {% extends "base.html" %}
-
 {% block title %}Make Payment{% endblock %}
 
 {% block content %}
-<div class="container mt-5" style="max-width:600px;">
+<div class="container py-3" style="max-width: 540px;">
 
-    <div class="card shadow-sm">
-        <div class="card-body">
+  <h2 class="fw-bold mb-4">Make a Payment</h2>
 
-            <h3 class="mb-4">Make a Payment</h3>
-
-            <form method="post">
-                {% csrf_token %}
-
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {{ form.non_field_errors }}
-                    </div>
-                {% endif %}
-
-                <div class="mb-3">
-                    <label class="form-label">Amount</label>
-                    {{ form.amount }}
-                    {% if form.amount.errors %}
-                        <div class="text-danger">{{ form.amount.errors }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Payment Method</label>
-                    {{ form.payment_method }}
-                    {% if form.payment_method.errors %}
-                        <div class="text-danger">{{ form.payment_method.errors }}</div>
-                    {% endif %}
-                </div>
-
-                <div id="cardDetails">
-                    <div class="mb-3">
-                        <label class="form-label">Card Number</label>
-                        <input type="text" name="card_number" class="form-control" placeholder="1234 5678 9012 3456">
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Expiry Date</label>
-                            <input type="text" name="expiry_date" class="form-control" placeholder="MM/YY">
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">CVV</label>
-                            <input type="password" name="cvv" class="form-control" placeholder="123">
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Submit Payment</button>
-                <a href="{% url 'tenant_dashboard' %}" class="btn btn-secondary ms-2">Cancel</a>
-            </form>
-
+  <!-- Lease Info -->
+  {% if lease %}
+  <div class="card mb-4 border-0 bg-light">
+    <div class="card-body">
+      <h6 class="fw-semibold mb-2">Current Lease</h6>
+      <div class="row g-2 small">
+        <div class="col-6">
+          <span class="text-muted">Apartment:</span>
+          <span class="fw-semibold ms-1">{{ lease.apartment.address }}</span>
         </div>
+        <div class="col-6">
+          <span class="text-muted">City:</span>
+          <span class="fw-semibold ms-1">{{ lease.apartment.city.name }}</span>
+        </div>
+        <div class="col-6">
+          <span class="text-muted">Monthly Rent:</span>
+          <span class="fw-semibold ms-1 text-success">£{{ lease.rent_amount }}</span>
+        </div>
+        <div class="col-6">
+          <span class="text-muted">Lease Ends:</span>
+          <span class="fw-semibold ms-1">{{ lease.end_date }}</span>
+        </div>
+      </div>
     </div>
+  </div>
+  {% endif %}
+
+  <!-- Payment Form -->
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Amount (£)</label>
+          {{ form.amount }}
+          {% if form.amount.errors %}
+            <div class="text-danger small">{{ form.amount.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Payment Method</label>
+          {{ form.payment_method }}
+          {% if form.payment_method.errors %}
+            <div class="text-danger small">{{ form.payment_method.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-credit-card me-1"></i>Confirm Payment
+          </button>
+          <a href="{% url 'tenant_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
 
 </div>
-
-<script>
-const paymentMethod = document.getElementById("id_payment_method");
-const cardDetails = document.getElementById("cardDetails");
-
-function toggleCardDetails() {
-    if (!paymentMethod || !cardDetails) return;
-    if (paymentMethod.value === "credit_card") {
-        cardDetails.style.display = "block";
-    } else {
-        cardDetails.style.display = "none";
-    }
-}
-
-if (paymentMethod) {
-    paymentMethod.addEventListener("change", toggleCardDetails);
-    toggleCardDetails();
-}
-</script>
 {% endblock %}

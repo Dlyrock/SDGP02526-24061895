@@ -282,20 +282,11 @@ def payment_form(request):
 
     lease = Lease.objects.filter(tenant=tenant).first()
 
-    if not lease:
-        apartment = Apartment.objects.first()
-        if not apartment:
-            messages.error(request, "No apartment exists.")
-            return redirect('tenant_dashboard')
 
-        lease = Lease.objects.create(
-            tenant=tenant,
-            apartment=apartment,
-            start_date=date.today(),
-            end_date=date.today() + timedelta(days=365),
-            rent_amount=apartment.rent,
-            deposit=0
-        )
+    if not lease:
+        messages.error(request, "You do not have an active lease. Please contact the front desk.")
+        return redirect("tenant_dashboard")
+
 
     if request.method == 'POST':
         form = PaymentForm(request.POST)
@@ -313,7 +304,7 @@ def payment_form(request):
     else:
         form = PaymentForm()
 
-    return render(request, 'tenant/payment_form.html', {'form': form})
+    return render(request, 'tenant/payment_form.html', {'form': form, 'lease': lease})
 
 
 # -------------------
@@ -617,3 +608,60 @@ def manager_add_city(request):
         form = CityForm()
 
     return render(request, 'admin/manager_add_city.html', {'form': form})
+
+
+# -------------------
+# EARLY LEASE TERMINATION
+# -------------------
+@login_required
+def request_early_termination(request):
+
+    if request.user.role != 'TENANT':
+        return redirect('admin_dashboard')
+
+    tenant = Tenant.objects.filter(user=request.user).first()
+
+    if not tenant:
+        messages.error(request, "No tenant profile found.")
+        return redirect('tenant_dashboard')
+
+    lease = Lease.objects.filter(tenant=tenant).first()
+
+    if not lease:
+        messages.error(request, "You do not have an active lease.")
+        return redirect('tenant_dashboard')
+
+    if lease.early_termination_requested:
+        messages.warning(request, "You have already submitted an early termination request.")
+        return redirect('tenant_dashboard')
+
+    # Calculate: notice period = today + 1 month, penalty = 5% of monthly rent
+    today = date.today()
+    # 1 month notice: add 30 days (safe cross-platform alternative)
+    next_month = today.replace(day=1)
+    if today.month == 12:
+        notice_end_date = today.replace(year=today.year+1, month=1, day=today.day)
+    else:
+        import calendar
+        last_day = calendar.monthrange(today.year, today.month+1)[1]
+        notice_end_date = today.replace(month=today.month+1, day=min(today.day, last_day))
+    penalty = lease.calculate_early_termination_penalty()
+
+    if request.method == 'POST':
+        lease.early_termination_requested = True
+        lease.early_termination_date = notice_end_date
+        lease.early_termination_penalty = penalty
+        lease.save()
+        messages.success(
+            request,
+            f"Early termination request submitted. "
+            f"Your lease will end on {notice_end_date}. "
+            f"Penalty charge: £{penalty}."
+        )
+        return redirect('tenant_dashboard')
+
+    return render(request, 'tenant/early_termination.html', {
+        'lease': lease,
+        'notice_end_date': notice_end_date,
+        'penalty': penalty,
+    })

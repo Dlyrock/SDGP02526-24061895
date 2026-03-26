@@ -27,6 +27,7 @@ urlpatterns = [
     path('payment/', views.payment_form, name='payment_form'),
     path('maintenance/', views.maintenance_request, name='maintenance_request'),
     path('complaint/', views.complaint_form, name='complaint_form'),
+    path('lease/terminate/', views.request_early_termination, name='request_early_termination'),
 
     # STAFF PANEL
     path('staff/', views.staff_panel, name='staff_panel'),

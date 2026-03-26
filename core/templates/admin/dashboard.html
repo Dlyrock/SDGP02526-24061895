@@ -301,33 +301,61 @@
         });
     });
 
-    // Late Payments Pie Chart
+    // Late Payments Bar Chart
     const latePaymentsEl = document.getElementById("late-payments-data");
     const latePayments = latePaymentsEl ? JSON.parse(latePaymentsEl.textContent) : {};
 
     const lateCanvas = document.getElementById("latePaymentsChart");
     if (lateCanvas) {
-        new Chart(lateCanvas.getContext("2d"), {
-            type: "pie",
-            data: {
-                labels: Object.keys(latePayments),
-                datasets: [{
-                    data: Object.values(latePayments),
-                    backgroundColor: [
-                        "#ef4444",
-                        "#f59e0b",
-                        "#10b981",
-                        "#2563eb",
-                        "#8b5cf6",
-                        "#ec4899"
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
+        const lateLabels = Object.keys(latePayments);
+        const lateValues = Object.values(latePayments);
+
+        if (lateLabels.length === 0) {
+            lateCanvas.parentElement.innerHTML = '<p class="text-muted text-center pt-5">No apartment data available.</p>';
+        } else {
+            new Chart(lateCanvas.getContext("2d"), {
+                type: "bar",
+                data: {
+                    labels: lateLabels,
+                    datasets: [{
+                        label: "Late Payments",
+                        data: lateValues,
+                        backgroundColor: lateValues.map(v => v > 0 ? "#ef4444" : "#10b981"),
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.parsed.y === 0
+                                    ? 'No late payments'
+                                    : ctx.parsed.y + ' late payment(s)'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 },
+                            title: { display: true, text: 'Number of Late Payments' }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 30,
+                                callback: function(val, index) {
+                                    const label = this.getLabelForValue(index);
+                                    return label.length > 20 ? label.substring(0, 20) + '...' : label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 </script>
 

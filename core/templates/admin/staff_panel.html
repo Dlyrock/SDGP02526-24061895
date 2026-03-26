@@ -1,75 +1,123 @@
 {% extends "base.html" %}
-
 {% block title %}Staff Panel{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container py-3">
 
-    <h2 class="mb-4">Staff Panel</h2>
+  <h2 class="fw-bold mb-4">Staff Panel</h2>
 
-    <!-- MAINTENANCE -->
-    <div class="card mb-4">
-        <div class="card-header">Maintenance Requests</div>
-        <table class="table mb-0">
-            <thead>
-                <tr>
-                    <th>Tenant</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Update</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for req in maintenance_requests %}
-                <tr>
-                    <td>{{ req.tenant.first_name }}</td>
-                    <td>{{ req.description }}</td>
-                    <td>{{ req.status }}</td>
-                    <td>
-                        <form method="post" action="{% url 'update_maintenance' req.id %}">
-                            {% csrf_token %}
-                            <select name="status" class="form-select form-select-sm">
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                            <button class="btn btn-sm btn-primary mt-1">Update</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <!-- MAINTENANCE REQUESTS -->
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Maintenance Requests</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Tenant</th>
+            <th>Apartment</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Scheduled</th>
+            <th>Cost (£)</th>
+            <th>Time (hrs)</th>
+            <th>Update</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in maintenance_requests %}
+          <tr>
+            <td>{{ req.tenant.first_name }} {{ req.tenant.last_name }}</td>
+            <td>{{ req.apartment.address }}</td>
+            <td>{{ req.description|truncatechars:50 }}</td>
+            <td>
+              {% if req.status == 'pending' %}<span class="badge bg-danger">Pending</span>
+              {% elif req.status == 'in_progress' %}<span class="badge bg-warning text-dark">In Progress</span>
+              {% else %}<span class="badge bg-success">Completed</span>{% endif %}
+            </td>
+            <td>{{ req.assigned_to.get_full_name|default:"—" }}</td>
+            <td>{{ req.scheduled_date|default:"—" }}</td>
+            <td>{{ req.cost }}</td>
+            <td>{{ req.time_taken|default:"—" }}</td>
+            <td>
+              <form method="post" action="{% url 'update_maintenance' req.id %}">
+                {% csrf_token %}
+                <div class="mb-1">
+                  <select name="status" class="form-select form-select-sm">
+                    <option value="pending" {% if req.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if req.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if req.status == 'completed' %}selected{% endif %}>Completed</option>
+                  </select>
+                </div>
+                <div class="mb-1">
+                  <input type="date" name="scheduled_date" class="form-control form-control-sm"
+                    value="{{ req.scheduled_date|default:'' }}" placeholder="Scheduled date">
+                </div>
+                <div class="mb-1">
+                  <input type="number" name="cost" class="form-control form-control-sm"
+                    value="{{ req.cost }}" placeholder="Cost £" step="0.01" min="0">
+                </div>
+                <div class="mb-1">
+                  <input type="number" name="time_taken" class="form-control form-control-sm"
+                    value="{{ req.time_taken|default:'' }}" placeholder="Hours" step="0.5" min="0">
+                </div>
+                <button class="btn btn-sm btn-primary w-100">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center text-muted p-4">No maintenance requests.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <!-- COMPLAINTS -->
-    <div class="card">
-        <div class="card-header">Complaints</div>
-        <table class="table mb-0">
-            <thead>
-                <tr>
-                    <th>Tenant</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Delete</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for comp in complaints %}
-                <tr>
-                    <td>{{ comp.tenant.first_name }}</td>
-                    <td>{{ comp.description }}</td>
-                    <td>{{ comp.status }}</td>
-                    <td>
-                        <a href="{% url 'delete_complaint' comp.id %}" class="btn btn-danger btn-sm">
-                            Delete
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <!-- COMPLAINTS -->
+  <div class="card">
+    <div class="card-header fw-semibold">Complaints</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Tenant</th>
+            <th>Apartment</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comp in complaints %}
+          <tr>
+            <td>{{ comp.tenant.first_name }} {{ comp.tenant.last_name }}</td>
+            <td>{{ comp.apartment.address }}</td>
+            <td>{{ comp.description|truncatechars:60 }}</td>
+            <td>
+              {% if comp.status == 'open' %}<span class="badge bg-danger">Open</span>
+              {% elif comp.status == 'investigating' %}<span class="badge bg-warning text-dark">Investigating</span>
+              {% elif comp.status == 'resolved' %}<span class="badge bg-success">Resolved</span>
+              {% else %}<span class="badge bg-secondary">Closed</span>{% endif %}
+            </td>
+            <td>{{ comp.date }}</td>
+            <td class="d-flex gap-1">
+              {% if comp.status != 'resolved' %}
+              <a href="{% url 'resolve_complaint' comp.id %}" class="btn btn-sm btn-success">Resolve</a>
+              {% endif %}
+              {% if user.role == 'ADMIN' or user.role == 'MANAGER' %}
+              <a href="{% url 'delete_complaint' comp.id %}" class="btn btn-sm btn-danger"
+                onclick="return confirm('Delete this complaint?')">Delete</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted p-4">No complaints.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
 </div>
 {% endblock %}
